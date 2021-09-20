@@ -1,0 +1,60 @@
+
+Debug/app.obj
+Debug/Audio.obj
+Debug/Font.obj
+Debug/GBJam 9.log
+Debug/GBJam 9.tlog/CL.command.1.tlog
+Debug/GBJam 9.tlog/CL.read.1.tlog
+Debug/GBJam 9.tlog/CL.write.1.tlog
+Debug/GBJam 9.tlog/GBJam 9.lastbuildstate
+Debug/GBJam 9.tlog/unsuccessfulbuild
+Debug/main.obj
+Debug/stb_image.obj
+Debug/textureLoader.obj
+Debug/vc142.idb
+Debug/vc142.pdb
+Debug/vkhelper.obj
+Debug/vkinit.obj
+x64/Debug/app.obj
+x64/Debug/Audio.obj
+x64/Debug/Font.obj
+x64/Debug/GBJam 9.exe.recipe
+x64/Debug/GBJam 9.ilk
+x64/Debug/GBJam 9.log
+x64/Debug/GBJam 9.tlog/CL.command.1.tlog
+x64/Debug/GBJam 9.tlog/CL.read.1.tlog
+x64/Debug/GBJam 9.tlog/CL.write.1.tlog
+x64/Debug/GBJam 9.tlog/GBJam 9.lastbuildstate
+x64/Debug/GBJam 9.tlog/link.command.1.tlog
+x64/Debug/GBJam 9.tlog/link.read.1.tlog
+x64/Debug/GBJam 9.tlog/link.write.1.tlog
+x64/Debug/main.obj
+x64/Debug/Render.obj
+x64/Debug/stb_image.obj
+x64/Debug/textureLoader.obj
+x64/Debug/vc142.idb
+x64/Debug/vc142.pdb
+x64/Debug/vkhelper.obj
+x64/Debug/vkinit.obj
+x64/Debug/World.obj
+x64/Release/app.obj
+x64/Release/Audio.obj
+x64/Release/Font.obj
+x64/Release/GBJam 9.exe.recipe
+x64/Release/GBJam 9.iobj
+x64/Release/GBJam 9.ipdb
+x64/Release/GBJam 9.log
+x64/Release/GBJam 9.tlog/CL.command.1.tlog
+x64/Release/GBJam 9.tlog/CL.read.1.tlog
+x64/Release/GBJam 9.tlog/CL.write.1.tlog
+x64/Release/GBJam 9.tlog/GBJam 9.lastbuildstate
+x64/Release/GBJam 9.tlog/link.command.1.tlog
+x64/Release/GBJam 9.tlog/link.read.1.tlog
+x64/Release/GBJam 9.tlog/link.write.1.tlog
+x64/Release/main.obj
+x64/Release/Render.obj
+x64/Release/stb_image.obj
+x64/Release/textureLoader.obj
+x64/Release/vc142.pdb
+x64/Release/vkhelper.obj
+x64/Release/vkinit.obj
