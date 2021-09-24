@@ -15,6 +15,7 @@
 #include <string>
 #include <fstream>
 
+#include "Consts.h"
 #include "typeStructs.h"
 
 #ifndef NDEBUG

@@ -14,6 +14,7 @@
 class Audio
 {
 public:
+	Audio() {}
 	Audio(std::string filename)
 	{
 		if (strcmp(filename.substr(filename.find_last_of('.'), 3).c_str(), "mp3"))
@@ -22,7 +23,6 @@ public:
 		std::string cmd = "open \"" + filename + "\" alias " + filename;
 		mciSendStringA(cmd.c_str(), NULL, 0, 0);
 	}
-	Audio() {}
 	~Audio()
 	{
 		std::string cmd = "close " + filename;

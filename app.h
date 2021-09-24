@@ -18,9 +18,11 @@
 #include "input.h"
 #include "Audio.h"
 #include "Timer.h"
+#include "Consts.h"
 //gbjam
 #include "GBInput.h"
 #include "World.h"
+
 
 class App
 {
@@ -45,26 +47,19 @@ public:
 #pragma endregion
 
 	Input input;
+
 private:
 	glm::vec2 correctedPos(glm::vec2 pos);
 	glm::vec2 correctedMouse();
-
-	const int TARGET_WIDTH = 160;
-	const int TARGET_HEIGHT = 144;
-	const bool FIXED_RATIO = true;
 
 	GLFWwindow* mWindow;
 	Render* mRender;
 	int mWindowWidth, mWindowHeight;
 	Input previousInput;
 	Timer timer;
-
-	glm::vec2 pos = glm::vec2(0, 0);
-
-	GBInput btn;
-	GBInput lastBtn;
-
+	Btn btn;
 	World* world;
+	Audio mainMusic;
 };
 
 #endif

@@ -35,8 +35,12 @@ App::~App()
 void App::loadAssets()
 {
 	//TODO load assets
-	world = new World(glm::vec2(0, 0), 10, 9);
-	world->LoadTextures(mRender);
+	world = new World(glm::vec2(0, 0), 15, 20);
+	world->LoadTextures(*mRender);
+	mainMusic = Audio("audio/main.mp3");
+	//mainMusic.loop();
+	mainMusic.setVolume(0.5);
+
 	mRender->endTextureLoad();
 }
 
@@ -60,7 +64,7 @@ void App::resize(int windowWidth, int windowHeight)
 void App::PreUpdate()
 {
 	glfwPollEvents();
-	btn.Update(input.Keys);
+	btn.press.Update(input.Keys);
 	timer.Update();
 }
 
@@ -68,28 +72,20 @@ void App::update()
 {
 	PreUpdate();
 
-	if(btn.A())
-		MoveCamera();
-
+	world->Update(btn, timer);
+	
 	PostUpdate();
-}
-
-void App::MoveCamera()
-{
-	if (btn.Right())
-		pos.x -= 0.1 * timer.FrameElapsed();
-	if (btn.Left())
-		pos.x += 0.1 * timer.FrameElapsed();
-	if (btn.Up())
-		pos.y += 0.1 * timer.FrameElapsed();
-	if (btn.Down())
-		pos.y -= 0.1 * timer.FrameElapsed();
-	mRender->setCameraOffset(pos);
 }
 
 void App::PostUpdate()
 {
-	lastBtn = btn;
+	btn.prev = btn.press;
+	MoveCamera();
+}
+
+void App::MoveCamera()
+{
+	mRender->setCameraOffset(world->getCameraOffset());
 }
 
 
@@ -97,7 +93,7 @@ void App::draw()
 {
 	mRender->startDraw();
 
-	world->Draw(mRender);
+	world->Draw(*mRender);
 
 	mRender->endDraw();
 }

@@ -21,11 +21,14 @@
   <ItemGroup>
     <ClCompile Include="app.cpp" />
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="menu.cpp" />
     <ClCompile Include="Render.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="textureLoader.cpp" />
+    <ClCompile Include="unit.cpp" />
     <ClCompile Include="vkhelper.cpp" />
     <ClCompile Include="vkinit.cpp" />
     <ClCompile Include="World.cpp" />
@@ -33,13 +36,21 @@
   <ItemGroup>
     <ClInclude Include="app.h" />
     <ClInclude Include="Audio.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Font.h" />
+    <ClInclude Include="GameHelper.h" />
     <ClInclude Include="GBInput.h" />
+    <ClInclude Include="Consts.h" />
+    <ClInclude Include="GameConsts.h" />
+    <ClInclude Include="Menu.h" />
     <ClInclude Include="input.h" />
+    <ClInclude Include="MyRandom.h" />
     <ClInclude Include="Render.h" />
     <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="typeStructs.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="unit.h" />
     <ClInclude Include="vkhelper.h" />
     <ClInclude Include="vkinit.h" />
     <ClInclude Include="World.h" />

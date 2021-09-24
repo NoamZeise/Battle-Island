@@ -26,7 +26,6 @@ uint32_t TextureLoader::loadTexture(std::string path)
 	tex->pixelData = stbi_load(tex->path.c_str(), &tex->width, &tex->height, &tex->nrChannels, 0);
 	if (!tex->pixelData)
 		throw std::runtime_error("failed to load texture at " + path);
-
 	tex->fileSize = tex->width * tex->height * tex->nrChannels;
 
 	switch (tex->nrChannels)
@@ -59,7 +58,7 @@ uint32_t TextureLoader::loadTexture(std::string path)
 		throw std::runtime_error("texture at " + path + " has an unsupported number of channels");
 	}
 
-	if (PALETTE_SWAP)
+	if (PALETTE_SWAP && tex->nrChannels == 4)
 	{
 		for (size_t i = 0; i < tex->fileSize; i += 4)
 		{
@@ -128,6 +127,42 @@ uint32_t TextureLoader::loadTexture(unsigned char* data, int width, int height, 
 		throw std::runtime_error("texture character has an unsupported number of channels");
 	}
 
+	if (PALETTE_SWAP && tex->nrChannels == 4)
+	{
+		for (size_t i = 0; i < tex->fileSize; i += 4)
+		{
+			if (tex->pixelData[i + 3] == 0x00) //transparent 
+				continue;
+			unsigned char colour[3];
+			colour[0] = tex->pixelData[i];
+			colour[1] = tex->pixelData[i + 1];
+			colour[2] = tex->pixelData[i + 2];
+			if (colour[0] == 0xe0 && colour[1] == 0xf8 && colour[2] == 0xd0)
+			{
+				tex->pixelData[i] = COLOUR_SWAP_1[0];
+				tex->pixelData[i + 1] = COLOUR_SWAP_1[1];
+				tex->pixelData[i + 2] = COLOUR_SWAP_1[2];
+			}
+			if (colour[0] == 0x88 && colour[1] == 0xc0 && colour[2] == 0x70)
+			{
+				tex->pixelData[i] = COLOUR_SWAP_2[0];
+				tex->pixelData[i + 1] = COLOUR_SWAP_2[1];
+				tex->pixelData[i + 2] = COLOUR_SWAP_2[2];
+			}
+			if (colour[0] == 0x34 && colour[1] == 0x68 && colour[2] == 0x56)
+			{
+				tex->pixelData[i] = COLOUR_SWAP_3[0];
+				tex->pixelData[i + 1] = COLOUR_SWAP_3[1];
+				tex->pixelData[i + 2] = COLOUR_SWAP_3[2];
+			}
+			if (colour[0] == 0x08 && colour[1] == 0x18 && colour[2] == 0x20)
+			{
+				tex->pixelData[i] = COLOUR_SWAP_4[0];
+				tex->pixelData[i + 1] = COLOUR_SWAP_4[1];
+				tex->pixelData[i + 2] = COLOUR_SWAP_4[2];
+			}
+		}
+	}
 
 	return texToLoad.size() - 1;
 }

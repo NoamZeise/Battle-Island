@@ -31,6 +31,15 @@
     <ClCompile Include="World.cpp">
       <Filter>cpp\App\Game</Filter>
     </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>cpp\App\Game\helper</Filter>
+    </ClCompile>
+    <ClCompile Include="unit.cpp">
+      <Filter>cpp\App\Game\units</Filter>
+    </ClCompile>
+    <ClCompile Include="menu.cpp">
+      <Filter>cpp\App\Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app.h">
@@ -60,14 +69,38 @@
     <ClInclude Include="Font.h">
       <Filter>1headers\Framework\Rendering\Assets</Filter>
     </ClInclude>
-    <ClInclude Include="GBInput.h">
-      <Filter>1headers\App</Filter>
-    </ClInclude>
     <ClInclude Include="Timer.h">
       <Filter>1headers</Filter>
     </ClInclude>
     <ClInclude Include="World.h">
       <Filter>1headers\App\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Consts.h">
+      <Filter>1headers</Filter>
+    </ClInclude>
+    <ClInclude Include="GBInput.h">
+      <Filter>1headers\App\Game\Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="GameConsts.h">
+      <Filter>1headers\App\Game\Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="GameHelper.h">
+      <Filter>1headers\App\Game\Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="MyRandom.h">
+      <Filter>1headers\App</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>1headers\App\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="unit.h">
+      <Filter>1headers\App\Game\units</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu.h">
+      <Filter>1headers\App\Game\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>1headers\App\Game\UI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -115,6 +148,21 @@
     </Filter>
     <Filter Include="cpp\App\Game">
       <UniqueIdentifier>{959e3eb0-6bd1-4713-899a-541efdaff8b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpp\App\Game\units">
+      <UniqueIdentifier>{eb26485a-d0f1-4e19-a5c0-2ec9d44d4161}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1headers\App\Game\Helper">
+      <UniqueIdentifier>{ce3fc9e2-9cd0-49c7-8aa2-673d0850a383}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpp\App\Game\helper">
+      <UniqueIdentifier>{8785e4b2-5150-4c96-8516-b130c4552a76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1headers\App\Game\units">
+      <UniqueIdentifier>{cb8f543d-9cf5-44de-bb41-3bf072d1e422}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="1headers\App\Game\UI">
+      <UniqueIdentifier>{3fd5ff87-0ac1-49b1-91a3-ccca9de5a0d6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

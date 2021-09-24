@@ -27,12 +27,12 @@ class GBInput
 public:
 	GBInput()
 	{
-		for (uint32_t i = GBButton::Up; i < GBButton::Start; i++)
+		for (uint32_t i = GBButton::Up; i <= GBButton::Start; i++)
 			pressed.insert(std::pair<GBButton, bool>(static_cast<GBButton>(i), false));
 	}
 	void Update(bool* keys)
 	{
-		for (uint32_t i = GBButton::Up; i < GBButton::Start; i++)
+		for (uint32_t i = GBButton::Up; i <= GBButton::Start; i++)
 			pressed[static_cast<GBButton>(i)] = false;
 
 		test(keys[GLFW_KEY_W],		GBButton::Up);
@@ -43,6 +43,11 @@ public:
 		test(keys[GLFW_KEY_PERIOD], GBButton::B);
 		test(keys[GLFW_KEY_ENTER],  GBButton::Select);
 		test(keys[GLFW_KEY_ESCAPE], GBButton::Start);
+	}
+	void Reset(bool val)
+	{
+		for (uint32_t i = GBButton::Up; i <= GBButton::Start; i++)
+			pressed[static_cast<GBButton>(i)] = val;
 	}
 
 	bool Up() { return pressed[GBButton::Up]; }
@@ -58,9 +63,14 @@ private:
 
 	void test(bool state, GBButton btn)
 	{
-		if (state)
-			pressed[btn] = true;
+		pressed[btn] = state;
 	}
+};
+
+struct Btn
+{
+	GBInput press;
+	GBInput prev;
 };
 
 

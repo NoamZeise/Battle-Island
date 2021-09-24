@@ -17,12 +17,6 @@
 #include <array>
 #include <string>
 
-
-static bool USE_SRGB = false;
-static bool ENABLE_MIP = false;
-static bool PIXELATED = true;
-static bool VSYNC = true;
-
 struct QueueFamilies
 {
 	uint32_t graphicsPresentFamilyIndex;

@@ -16,13 +16,7 @@
 
 #include "typeStructs.h"
 #include "vkhelper.h"
-
-const int MAX_TEXTURES_SUPPORTED = 200;//match in shader
-const bool PALETTE_SWAP = false;
-const unsigned char COLOUR_SWAP_1[3] = { 0xFF, 0xFF, 0xFF };
-const unsigned char COLOUR_SWAP_2[3] = { 0xAA, 0xAA, 0xAA };
-const unsigned char COLOUR_SWAP_3[3] = { 0x88, 0x88, 0x88 };
-const unsigned char COLOUR_SWAP_4[3] = { 0x11, 0x11, 0x11 };
+#include "Consts.h"
 
 struct TempTexture
 {
