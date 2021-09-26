@@ -35,7 +35,7 @@ App::~App()
 void App::loadAssets()
 {
 	//TODO load assets
-	world = new World(glm::vec2(0, 0), 15, 20);
+	world = new World(glm::vec2(0, 0), 15, 8);
 	world->LoadTextures(*mRender);
 	mainMusic = Audio("audio/main.mp3");
 	//mainMusic.loop();

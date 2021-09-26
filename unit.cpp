@@ -30,7 +30,7 @@ void Unit::Update(Timer& timer)
 		for (size_t i = 0; i < soldiers.size(); i++)
 		{
 			float dist = glm::distance(destination[i], soldiers[i]);
-			if (dist < 2)
+			if (dist < 0.05)
 				moving = false;
 			else 
 				allArrived = false;
@@ -85,4 +85,11 @@ void Unit::move(Location location)
 		//if (destination[i].x > tileRect.x + (tileRect.z - SOLDIER_TEX_DIM.x)) destination[i].x = tileRect.x + (tileRect.z - SOLDIER_TEX_DIM.x);
 		//if (destination[i].y > tileRect.y + (tileRect.w - SOLDIER_TEX_DIM.y)) destination[i].y = tileRect.y + (tileRect.w - SOLDIER_TEX_DIM.y);
 	}
+}
+
+bool Unit::hit()
+{
+	soldiers.pop_back();
+	return (soldiers.size() == 0);
+	
 }

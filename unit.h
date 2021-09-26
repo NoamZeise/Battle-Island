@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include <vector>
+#include <utility>
 
 #include "GameConsts.h"
 #include "Render.h"
@@ -32,6 +33,7 @@ public:
 	void take() { movesLeft--; }
 	unsigned int getMovesLeft() { return movesLeft; }
 	void resetMoves() { movesLeft = 2; }
+	bool hit();
 private:
 	unsigned int movesLeft = 2;
 	unsigned int soldierTex = 0;
@@ -43,9 +45,9 @@ private:
 	glm::vec4 tileRect;
 	bool moving = false;
 	Random random;
-	const float SOLIDER_SPEED = 0.02f;
+	float SOLIDER_SPEED = 0.02f;
 	glm::vec4 worldRect;
-	const glm::vec2 SOLDIER_TEX_DIM = glm::vec2( 3.0f, 3.0f);
+	glm::vec2 SOLDIER_TEX_DIM = glm::vec2( 3.0f, 3.0f);
 };
 
 

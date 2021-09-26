@@ -24,8 +24,8 @@ void World::LoadTextures(Render& render)
 	texture.insert(std::pair<Tile, uint32_t>(Tile::Water, render.LoadTexture("textures/tiles/water.png")));
 	texture.insert(std::pair<Tile, uint32_t>(Tile::Material, render.LoadTexture("textures/tiles/forest.png")));
 	texture.insert(std::pair<Tile, uint32_t>(Tile::Land, render.LoadTexture("textures/tiles/land.png")));
-	texture.insert(std::pair<Tile, uint32_t>(Tile::PlayerCity, render.LoadTexture("textures/tiles/city1.png")));
-	texture.insert(std::pair<Tile, uint32_t>(Tile::EnemyCity, render.LoadTexture("textures/tiles/city2.png")));
+	texture.insert(std::pair<Tile, uint32_t>(Tile::PlayerCity, render.LoadTexture("textures/tiles/city2.png")));
+	texture.insert(std::pair<Tile, uint32_t>(Tile::EnemyCity, render.LoadTexture("textures/tiles/city1.png")));
 	texture.insert(std::pair<Tile, uint32_t>(Tile::PlayerUnit, render.LoadTexture("textures/unit.png")));
 	texture.insert(std::pair<Tile, uint32_t>(Tile::EnemyUnit, render.LoadTexture("textures/enemyUnit.png")));
 
@@ -39,6 +39,8 @@ void World::LoadTextures(Render& render)
 	labels.insert(std::pair<Tile, uint32_t>(Tile::EnemyUnit, render.LoadTexture("textures/labels/unit.png")));
 	moveUsedTex = render.LoadTexture("textures/usedMove.png");
 	moveAvailableTex = render.LoadTexture("textures/availableMove.png");
+	cityHpFullTex = render.LoadTexture("textures/cityHealthFull.png");
+	cityHpEmptyTex = render.LoadTexture("textures/cityHealthEmpty.png");
 
 	map.push_back(std::vector<Tile>(width * height, Tile::Water));
 	genWorld();
@@ -114,8 +116,8 @@ void World::genWorld()
 	Location unitPlacement = suitable[randomIndex];
 	modTile(2, unitPlacement, Tile::PlayerUnit);
 	user->addUnit(Unit(worldSize, unitPlacement, texture[Tile::PlayerUnit], 4, random));
-	Location enemyLoc = enemy->getCityLocation();
 
+	Location enemyLoc = enemy->getCityLocation();
 	suitable.clear();
 	getAdjacentLand(enemyLoc, &suitable);
 	suitableFound = false;
@@ -194,7 +196,7 @@ void World::genLand()
 		}
 
 		if (lWid < 1) { lWid = 1; }
-						
+
 		if (lWid >= width) lWid = width - 1;
 	}
 }
@@ -219,85 +221,35 @@ bool World::valid(unsigned int layer, Location location)
 	return isValid;
 }
 
-Tile World::getTile(unsigned int layer, Location location)
-{
-	if (!valid(layer, location)) return Tile::Empty;
-	return map[layer][(location.y * width) + location.x];
-}
-
-void World::modTile(unsigned int layer, Location location, Tile replace)
-{
-	if (!valid(layer, location)) return;
-
-	map[layer][(location.y * width) + location.x] = replace;
-}
-
 void World::Update(Btn& btn, Timer& timer)
 {
 
 	if (menuManager->isActive())
-	{
-		menuManager->Update(btn);
-		if (btn.press.Start() && !btn.prev.Start())
-		{
-			menuManager->CloseMenu(menuManager->activeMenu());
-			return;
-		}
-		MenuElems choice = menuManager->getChoice();
-		if (choice != MenuElems::None)
-		{
-			switch (choice)
-			{
-			case MenuElems::Exit:
-				menuManager->CloseMenu(menuManager->activeMenu());
-				break;
-			case MenuElems::Move:
-				CommandMode = true;
-				command = choice;
-				commandLoc = *camera.getCursor();
-				menuManager->CloseMenu(menuManager->activeMenu());
-				getAdjacentLand(lastCursor, &cmdOptions);
-				break;
-			case MenuElems::Hit:
-				CommandMode = true;
-				command = choice;
-				commandLoc = *camera.getCursor();
-				menuManager->CloseMenu(menuManager->activeMenu());
-				getAdjacentTargets(lastCursor, &cmdOptions);
-				break;
-			case MenuElems::Take:
-				modTile(1, lastCursor, Tile::Empty);
-				user->addResource(1);
-				user->UnitTake(lastCursor);
-				menuManager->CloseMenu(menuManager->activeMenu());
-				break;
-			case MenuElems::Pass:
-				menuManager->CloseMenu(menuManager->activeMenu());
-				userTurn = false;
-				user->ResetMoves();
-				break;
-			}
-		}
-	}
+		menuUpdate(btn);
 	else
 	{
 		camera.Update(btn, timer);
-		if(userTurn)
+		if (userTurn)
 			cursorUpdate(btn, timer);
 		else
-		{
-			NPCommand enemyCommand = enemy->getNPCommand(&map);
-			switch (enemyCommand.chosenCommand)
-			{
-			case MenuElems::Pass:
-				userTurn = true;
-				enemy->ResetMoves();
-				break;
-			}
-		}
+			enemyAiUpdate();
 		user->Update(timer);
 		enemy->Update(timer);
 	}
+
+	if (enemy->getCityHealth() == 0 || enemy->unitCount() <= 0)
+	{
+		playerLost = false;
+		gameOver = true;
+		Reset();
+	}
+	else if (user->getCityHealth() == 0 || user->unitCount() <= 0)
+	{
+		playerLost = true;
+		gameOver = true;
+		Reset();
+	}
+
 }
 
 void World::cursorUpdate(Btn& btn, Timer& timer)
@@ -328,17 +280,22 @@ void World::cursorUpdate(Btn& btn, Timer& timer)
 				switch (tileHovering)
 				{
 				case Tile::PlayerUnit:
-					if (user->UnitMoves(*cursor) > 0)
+					if (user->movesLeft(*cursor) > 0)
 					{
 						std::vector<MenuElems> menuOptions{ MenuElems::Move };
 						if (getTile(1, *cursor) == Tile::Material)
 							menuOptions.push_back(MenuElems::Take);
-						if(isAdjacentTargets(*cursor))
+						if(isAdjacentTargets(*cursor, true))
 							menuOptions.push_back(MenuElems::Hit);
 						menuManager->OpenMenu(MENU_POS, menuOptions);
 					}
 					break;
-
+				case Tile::PlayerCity:
+					std::vector<MenuElems> menuOptions{  };
+					if (user->getResourceCount() >= 3)
+						menuOptions.push_back(MenuElems::Build);
+					menuManager->OpenMenu(MENU_POS, menuOptions);
+					break;
 				}
 			}
 			else if(btn.press.Start() && !btn.prev.Start() || btn.press.B() && !btn.prev.B())
@@ -363,7 +320,10 @@ void World::cursorUpdate(Btn& btn, Timer& timer)
 							MoveUnit(commandLoc, *cursor, true);
 							break;
 						case MenuElems::Hit:
-							//get both attackers, remove more health from one being attacked than one starting attack
+							HitUnitOrCity(commandLoc, *cursor, true);
+							break;
+						case MenuElems::Build:
+							buildUnit(*cursor, true);
 							break;
 						}
 						resetCommandMode();
@@ -383,11 +343,155 @@ void World::cursorUpdate(Btn& btn, Timer& timer)
 	}
 }
 
+void World::menuUpdate(Btn& btn)
+{
+	menuManager->Update(btn);
+	if (btn.press.Start() && !btn.prev.Start())
+	{
+		menuManager->CloseMenu(menuManager->activeMenu());
+		return;
+	}
+	MenuElems choice = menuManager->getChoice();
+	if (choice != MenuElems::None)
+	{
+		switch (choice)
+		{
+		case MenuElems::Exit:
+			menuManager->CloseMenu(menuManager->activeMenu());
+			break;
+		case MenuElems::Move:
+		case MenuElems::Build:
+			CommandMode = true;
+			command = choice;
+			commandLoc = *camera.getCursor();
+			menuManager->CloseMenu(menuManager->activeMenu());
+			getAdjacentLand(lastCursor, &cmdOptions);
+			break;
+		case MenuElems::Hit:
+			CommandMode = true;
+			command = choice;
+			commandLoc = *camera.getCursor();
+			menuManager->CloseMenu(menuManager->activeMenu());
+			getAdjacentTargets(lastCursor, &cmdOptions, true);
+			break;
+		case MenuElems::Take:
+			modTile(1, lastCursor, Tile::Empty);
+			user->addResource(1);
+			user->UnitTurn(lastCursor);
+			menuManager->CloseMenu(menuManager->activeMenu());
+			break;
+		case MenuElems::Pass:
+			menuManager->CloseMenu(menuManager->activeMenu());
+			userTurn = false;
+			user->ResetMoves();
+			break;
+		}
+	}
+}
+
+void World::enemyAiUpdate()
+{
+	NPCommand enemyCommand = enemy->getNPCommand();
+
+	if (enemyCommand.unmovedUnits.size() > 0) 
+	{
+		Location unit = enemyCommand.unmovedUnits.back();
+		//attack if avaliable
+		std::vector<Location> adjTargets;
+		getAdjacentTargets(unit, &adjTargets, false);
+		if (adjTargets.size() > 0)
+		{
+			HitUnitOrCity(unit, adjTargets[0], false);
+		}
+		//collect resource if available
+		else if (getTile(1, unit) == Tile::Material)
+		{
+			modTile(1, unit, Tile::Empty);
+			enemy->addResource(1);
+			enemy->UnitTurn(unit);
+		}
+		//move towards enemy or resource
+		else
+		{
+			float bestDist = 1000;
+			Location* bestTarget = nullptr;
+			for (size_t y = 0; y < height; y++)
+			{
+				for (size_t x = 0; x < width; x++)
+				{
+					if (map[1][(y * width) + x] == Tile::Material ||
+						map[1][(y * width) + x] == Tile::EnemyUnit ||
+						map[1][(y * width) + x] == Tile::EnemyCity)
+					{
+						float thisDist = glm::distance(glm::vec2(unit.x, unit.y),
+							glm::vec2(x, y));
+						if (thisDist < bestDist)
+						{
+							bestDist = thisDist;
+							bestTarget = new Location(x, y);
+						}
+					}
+				}
+			}
+			if (bestTarget != nullptr)
+			{
+				std::vector<Location> movableSquares;
+				getAdjacentLand(unit, &movableSquares);
+				bestDist = 1000;
+				Location* bestMovable = nullptr;
+				for (size_t i = 0; i < movableSquares.size(); i++)
+				{
+					float thisDist = glm::distance(glm::vec2(movableSquares[i].x, movableSquares[i].y), 
+						glm::vec2(bestTarget->x, bestTarget->y));
+					if (thisDist < bestDist)
+					{
+						bestDist = thisDist;
+						bestMovable = new Location(movableSquares[i].x, movableSquares[i].y);
+					}
+				}
+				if (bestMovable != nullptr)
+				{
+					MoveUnit(unit, *bestMovable, false);
+					delete bestMovable;
+				}
+				delete bestTarget;
+			}
+		}
+	}
+	else if (enemyCommand.cityMove && enemy->getResourceCount() >= 3)
+	{
+		std::vector<Location> buildableSquares;
+		getAdjacentLand(enemyCommand.city, &buildableSquares);
+		if (buildableSquares.size() > 0)
+		{
+			buildUnit(buildableSquares[0], false);
+		}
+	}
+	else
+	{
+		userTurn = true;
+		enemy->ResetMoves();
+	}
+}
+
 void World::resetCommandMode()
 {
 	CommandMode = false;
 	cmdOptions.clear();
 	CommandMode = MenuElems::None;
+}
+
+Tile World::getTile(unsigned int layer, Location location)
+{
+	if (!valid(layer, location)) return Tile::Empty;
+	return map[layer][(location.y * width) + location.x];
+}
+
+void World::modTile(unsigned int layer, Location location, Tile replace)
+{
+	if (!valid(layer, location)) return;
+
+	map[layer][(location.y * width) + location.x] = replace;
 }
 
 void World::getAdjacentLand(Location loc, std::vector<Location>* vect)
@@ -402,27 +506,55 @@ void World::getAdjacentLand(Location loc, std::vector<Location>* vect)
 		vect->push_back(Location(loc.x, loc.y - 1));
 }
 
-void World::getAdjacentTargets(Location loc, std::vector<Location>* vect)
+void World::getAdjacentTargets(Location loc, std::vector<Location>* vect, bool player)
 {
-	if (getTile(1, Location(loc.x + 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x + 1, loc.y)) == Tile::EnemyUnit)
-		vect->push_back(Location(loc.x + 1, loc.y));
-	if (getTile(1, Location(loc.x - 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x - 1, loc.y)) == Tile::EnemyUnit)
-		vect->push_back(Location(loc.x - 1, loc.y));
-	if (getTile(1, Location(loc.x, loc.y + 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y + 1)) == Tile::EnemyUnit)
-		vect->push_back(Location(loc.x, loc.y + 1));
-	if (getTile(1, Location(loc.x, loc.y - 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y - 1)) == Tile::EnemyUnit)
-		vect->push_back(Location(loc.x, loc.y - 1));
+	if (player)
+	{
+		if (getTile(1, Location(loc.x + 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x + 1, loc.y)) == Tile::EnemyUnit)
+			vect->push_back(Location(loc.x + 1, loc.y));
+		if (getTile(1, Location(loc.x - 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x - 1, loc.y)) == Tile::EnemyUnit)
+			vect->push_back(Location(loc.x - 1, loc.y));
+		if (getTile(1, Location(loc.x, loc.y + 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y + 1)) == Tile::EnemyUnit)
+			vect->push_back(Location(loc.x, loc.y + 1));
+		if (getTile(1, Location(loc.x, loc.y - 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y - 1)) == Tile::EnemyUnit)
+			vect->push_back(Location(loc.x, loc.y - 1));
+	}
+	else
+	{
+		if (getTile(1, Location(loc.x + 1, loc.y)) == Tile::PlayerCity || getTile(2, Location(loc.x + 1, loc.y)) == Tile::PlayerUnit)
+			vect->push_back(Location(loc.x + 1, loc.y));
+		if (getTile(1, Location(loc.x - 1, loc.y)) == Tile::PlayerCity || getTile(2, Location(loc.x - 1, loc.y)) == Tile::PlayerUnit)
+			vect->push_back(Location(loc.x - 1, loc.y));
+		if (getTile(1, Location(loc.x, loc.y + 1)) == Tile::PlayerCity || getTile(2, Location(loc.x, loc.y + 1)) == Tile::PlayerUnit)
+			vect->push_back(Location(loc.x, loc.y + 1));
+		if (getTile(1, Location(loc.x, loc.y - 1)) == Tile::PlayerCity || getTile(2, Location(loc.x, loc.y - 1)) == Tile::PlayerUnit)
+			vect->push_back(Location(loc.x, loc.y - 1));
+	}
 }
-bool World::isAdjacentTargets(Location loc)
+bool World::isAdjacentTargets(Location loc, bool player)
 {
-	if (getTile(1, Location(loc.x + 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x + 1, loc.y)) == Tile::EnemyUnit)
-		return true;
-	if (getTile(1, Location(loc.x - 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x - 1, loc.y)) == Tile::EnemyUnit)
-		return true;
-	if (getTile(1, Location(loc.x, loc.y + 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y + 1)) == Tile::EnemyUnit)
-		return true;
-	if (getTile(1, Location(loc.x, loc.y - 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y - 1)) == Tile::EnemyUnit)
-		return true;
+	if (player)
+	{
+		if (getTile(1, Location(loc.x + 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x + 1, loc.y)) == Tile::EnemyUnit)
+			return true;
+		if (getTile(1, Location(loc.x - 1, loc.y)) == Tile::EnemyCity || getTile(2, Location(loc.x - 1, loc.y)) == Tile::EnemyUnit)
+			return true;
+		if (getTile(1, Location(loc.x, loc.y + 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y + 1)) == Tile::EnemyUnit)
+			return true;
+		if (getTile(1, Location(loc.x, loc.y - 1)) == Tile::EnemyCity || getTile(2, Location(loc.x, loc.y - 1)) == Tile::EnemyUnit)
+			return true;
+	}
+	else
+	{
+		if (getTile(1, Location(loc.x + 1, loc.y)) == Tile::PlayerCity || getTile(2, Location(loc.x + 1, loc.y)) == Tile::PlayerUnit)
+			return true;
+		if (getTile(1, Location(loc.x - 1, loc.y)) == Tile::PlayerCity || getTile(2, Location(loc.x - 1, loc.y)) == Tile::PlayerUnit)
+			return true;
+		if (getTile(1, Location(loc.x, loc.y + 1)) == Tile::PlayerCity || getTile(2, Location(loc.x, loc.y + 1)) == Tile::PlayerUnit)
+			return true;
+		if (getTile(1, Location(loc.x, loc.y - 1)) == Tile::PlayerCity || getTile(2, Location(loc.x, loc.y - 1)) == Tile::PlayerUnit)
+			return true;
+	}
 	return false;
 }
 
@@ -438,6 +570,46 @@ void World::MoveUnit(Location src, Location dst, bool isPlayer)
 	{
 		enemy->moveUnit(src, dst);
 		modTile(2, dst, Tile::EnemyUnit);
+	}
+}
+
+void World::HitUnitOrCity(Location attacker, Location defender, bool player)
+{
+	if (player)
+	{
+		user->UnitTurn(attacker);
+		if (enemy->hitUnitOrCity(defender))
+		{
+			if(getTile(2, defender) == Tile::EnemyUnit)
+				modTile(2, defender, Tile::Empty);
+			else if (getTile(1, defender) == Tile::EnemyCity)
+				modTile(1, defender, Tile::Empty);
+		}
+	}
+	else
+	{
+		enemy->UnitTurn(attacker);
+		if (user->hitUnitOrCity(defender))
+		{
+			if (getTile(2, defender) == Tile::PlayerUnit)
+				modTile(2, defender, Tile::Empty);
+			else if (getTile(1, defender) == Tile::PlayerCity)
+				modTile(1, defender, Tile::Empty);
+		}
+	}
+}
+
+void World::buildUnit(Location dst, bool isPlayer)
+{
+	if (isPlayer)
+	{
+		modTile(2, dst, Tile::PlayerUnit);
+		user->buildUnit(Unit(worldSize, dst, texture[Tile::PlayerUnit], 4, random));
+	}
+	else
+	{
+		modTile(2, dst, Tile::EnemyUnit);
+		enemy->buildUnit(Unit(worldSize, dst, texture[Tile::EnemyUnit], 4, random));
 	}
 }
 
@@ -462,12 +634,24 @@ void World::Draw(Render& render)
 			}
 		}
 	}
+	user->Draw(render); //city + units
+	enemy->Draw(render); //city + units
+	camera.Draw(render);//cursor
 	if (tileHovering != Tile::Empty)
 	{
 		render.DrawSquare(glm::vec4(5 - offset.x, 130 - offset.y, 22, 8), 0, labels[tileHovering]);
-		if (tileHovering == Tile::PlayerUnit)
+		if (tileHovering == Tile::PlayerUnit || tileHovering == Tile::PlayerCity)
 		{
-			unsigned int moves = user->UnitMoves(lastCursor);
+			unsigned int moves = 0;
+			if (CommandMode)
+			{
+				moves = user->movesLeft(commandLoc);
+				for (const auto& loc : cmdOptions)
+					if (lastCursor == loc)
+						moves--;
+			}
+			else
+				moves = user->movesLeft(lastCursor);
 			uint32_t tex = moveAvailableTex;
 			for (size_t i = 1; i < 3; i++)
 			{
@@ -477,10 +661,21 @@ void World::Draw(Render& render)
 					MOVE_TEX_DIM.x, MOVE_TEX_DIM.y), 0, tex);
 			}
 		}
+		if (tileHovering == Tile::EnemyCity || tileHovering == Tile::PlayerCity)
+		{
+			int health = tileHovering == Tile::PlayerCity ? user->getCityHealth() : enemy->getCityHealth();
+			uint32_t tex = cityHpFullTex;
+			for (size_t i = 1; i < 6; i++)
+			{
+				if (i > health)
+					tex = cityHpEmptyTex;
+				render.DrawSquare(glm::vec4((lastCursor.x * TILE_WIDTH) + ((i - 1) * (CITY_HP_DIM.x -1)), (lastCursor.y * TILE_HEIGHT) + TILE_HEIGHT - CITY_HP_DIM.y - 1,
+					CITY_HP_DIM.x, CITY_HP_DIM.y), 0, tex);
+			}
+		}
+
+		
 	}
-	user->Draw(render);
-	enemy->Draw(render);
-	camera.Draw(render);
 	for (size_t i = 0; i < cmdOptions.size(); i++)
 	{
 		glm::vec4 optionsRect = helper::tileBounds(worldSize, cmdOptions[i]);

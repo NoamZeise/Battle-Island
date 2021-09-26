@@ -42,6 +42,8 @@ private:
 	glm::vec2 position;
 
 	unsigned int width, height;
+	bool gameOver = false;
+	bool playerLost = false;
 
 	std::vector<std::vector<Tile>> map;
 	Location lastCursor;
@@ -66,8 +68,9 @@ private:
 	Camera camera;
 	Random random;
 	MenuManager* menuManager;   
-	unsigned int unitMenu = 0;
-	unsigned int cityMenu = 0;
+	uint32_t cityHpFullTex = 0;
+	uint32_t cityHpEmptyTex = 0;
+	const glm::vec2 CITY_HP_DIM = glm::vec2(4, 3);
 
 	const glm::vec2 MENU_POS = glm::vec2(80, 40);
 
@@ -81,14 +84,18 @@ private:
 	void genWorld();
 	void genLand();
 	bool valid(unsigned int layer, Location location);
-	void modTile(unsigned int layer, Location location, Tile replace);
-	Tile getTile(unsigned int layer, Location location);
 	void cursorUpdate(Btn& btn, Timer& timer);
+	void menuUpdate(Btn& btn);
+	void enemyAiUpdate();
 	void resetCommandMode();
 	void MoveUnit(Location src, Location dst, bool player);
+	void HitUnitOrCity(Location attacker, Location defender, bool player);
+	void buildUnit(Location dst, bool isPlayer);
+	void modTile(unsigned int layer, Location location, Tile replace);
+	Tile getTile(unsigned int layer, Location location);
 	void getAdjacentLand(Location loc, std::vector<Location>* vect);
-	void getAdjacentTargets(Location loc, std::vector<Location>* vect);
-	bool isAdjacentTargets(Location loc);
+	void getAdjacentTargets(Location loc, std::vector<Location>* vect, bool player);
+	bool isAdjacentTargets(Location loc, bool player);
 	void cleanup();
 };
 
