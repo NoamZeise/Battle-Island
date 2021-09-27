@@ -34,6 +34,7 @@ public:
 	unsigned int getMovesLeft() { return movesLeft; }
 	void resetMoves() { movesLeft = 2; }
 	bool hit();
+	void addHealth(int hpAdd);
 private:
 	unsigned int movesLeft = 2;
 	unsigned int soldierTex = 0;

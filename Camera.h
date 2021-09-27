@@ -20,16 +20,21 @@
 class Camera
 {
 public:
-	Location* cursor = nullptr;
 	Camera() {}
 	Camera(glm::vec4 worldSize, Render& render);
 	~Camera() { delete cursor; cursor = nullptr; }
+	void resize(glm::vec4 worldSize);
 	void Update(Btn& btn, Timer& timer);
 	void Draw(Render& render);
 	glm::vec2 getCameraOffset() { return offset; }
 	bool inCameraMode() { return cameraMode; }
 	Location* getCursor() { return cursor; }
+	glm::vec4 getRect()
+	{
+		return glm::vec4(-offset.x, -offset.y, 160, 144);
+	}
 private:
+	Location* cursor = nullptr;
 	unsigned int cursorTex = 0;
 	unsigned int width, height;
 	glm::vec4 worldSize;

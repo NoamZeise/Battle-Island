@@ -11,12 +11,14 @@ MenuManager::MenuManager(Render& render)
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Hit, render.LoadTexture("textures/menu/hit.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Act, render.LoadTexture("textures/menu/act.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Build, render.LoadTexture("textures/menu/build.png")));
+	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Rest, render.LoadTexture("textures/menu/rest.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Exit, render.LoadTexture("textures/menu/exit.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Move, render.LoadTexture("textures/menu/move.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Take, render.LoadTexture("textures/menu/take.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Pass, render.LoadTexture("textures/menu/pass.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Save, render.LoadTexture("textures/menu/save.png")));
 	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::Load, render.LoadTexture("textures/menu/load.png")));
+	menuTex.insert(std::pair<MenuElems, uint32_t>(MenuElems::CloseGame, render.LoadTexture("textures/menu/closeGame.png")));
 }
 void MenuManager::Update(Btn& btn)
 {

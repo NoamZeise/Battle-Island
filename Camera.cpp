@@ -9,6 +9,15 @@ Camera::Camera(glm::vec4 worldSize, Render& render)
 	height = worldSize.w / TILE_HEIGHT;
 }
 
+void Camera::resize(glm::vec4 worldSize)
+{
+	this->worldSize = worldSize;
+	width = worldSize.z / TILE_WIDTH;
+	height = worldSize.w / TILE_HEIGHT;
+	correct();
+	centre();
+}
+
 void Camera::Update(Btn& btn, Timer& timer)
 {
 	if (btn.press.Select() && !btn.prev.Select()) //swap control modes

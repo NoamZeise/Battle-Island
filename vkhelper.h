@@ -25,6 +25,27 @@ struct vkhelper
 		VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 	static void createMemory(Base base, VkDeviceSize size, VkDeviceMemory* memory,
 		VkMemoryPropertyFlags properties, uint32_t memoryTypeBits);
+
+	//from https://stackoverflow.com/questions/17261798/converting-a-hex-string-to-a-byte-array
+	static int char2int(unsigned char input)
+	{
+		if (input >= '0' && input <= '9')
+			return input - '0';
+		if (input >= 'A' && input <= 'F')
+			return input - 'A' + 10;
+		if (input >= 'a' && input <= 'f')
+			return input - 'a' + 10;
+		return 0x00;
+	}
+	static void hex2bin(const char* src, unsigned char* target)
+	{
+		while (*src && src[1])
+		{
+			*(target++) = char2int(*src) * 16 + char2int(src[1]);
+			src += 2;
+		}
+	}
+
 };
 
 

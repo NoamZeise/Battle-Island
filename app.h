@@ -22,6 +22,7 @@
 //gbjam
 #include "GBInput.h"
 #include "World.h"
+#include "title.h"
 
 
 class App
@@ -60,6 +61,7 @@ private:
 	Btn btn;
 	World* world;
 	Audio mainMusic;
+	Title* title;
 };
 
 #endif

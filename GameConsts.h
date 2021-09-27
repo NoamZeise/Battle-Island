@@ -5,6 +5,14 @@
 static const int TILE_WIDTH = 16;
 static const int TILE_HEIGHT = 16;
 
+static const int STARTING_UNIT_HP = 3;
+
+#ifndef NDEBUG
+const bool FAST_ENEMY_TURN = true;
+#else 
+const bool FAST_ENEMY_TURN = false;
+#endif
+
 struct Location
 {
 	Location() { x = 0, y = 0; }
@@ -40,12 +48,14 @@ enum MenuElems
 	Exit,
 	Act,
 	Build,
+	Rest,
 	Hit,
 	Move,
 	Take,
 	Pass,
 	Save,
 	Load,
+	CloseGame,
 };
 
 

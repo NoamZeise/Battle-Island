@@ -80,10 +80,10 @@ void Unit::move(Location location)
 	{
 		destination[i] = glm::vec2(tileRect.x + (random.PositiveReal() * (TILE_WIDTH - SOLDIER_TEX_DIM.x)),
 			tileRect.y + (random.PositiveReal() * (TILE_HEIGHT - SOLDIER_TEX_DIM.y)));
-		//if (destination[i].x < tileRect.x) destination[i].x = tileRect.x;
-		//if (destination[i].y < tileRect.y) destination[i].y = tileRect.y;
-		//if (destination[i].x > tileRect.x + (tileRect.z - SOLDIER_TEX_DIM.x)) destination[i].x = tileRect.x + (tileRect.z - SOLDIER_TEX_DIM.x);
-		//if (destination[i].y > tileRect.y + (tileRect.w - SOLDIER_TEX_DIM.y)) destination[i].y = tileRect.y + (tileRect.w - SOLDIER_TEX_DIM.y);
+		if (destination[i].x < tileRect.x) destination[i].x = tileRect.x;
+		if (destination[i].y < tileRect.y) destination[i].y = tileRect.y;
+		if (destination[i].x > tileRect.x + (tileRect.z - SOLDIER_TEX_DIM.x)) destination[i].x = tileRect.x + (tileRect.z - SOLDIER_TEX_DIM.x);
+		if (destination[i].y > tileRect.y + (tileRect.w - SOLDIER_TEX_DIM.y)) destination[i].y = tileRect.y + (tileRect.w - SOLDIER_TEX_DIM.y);
 	}
 }
 
@@ -92,4 +92,16 @@ bool Unit::hit()
 	soldiers.pop_back();
 	return (soldiers.size() == 0);
 	
+}
+
+void Unit::addHealth(int hpAdd)
+{
+	for (size_t i = 0; i < hpAdd; i++)
+	{
+		soldiers.push_back(glm::vec2(
+			tileRect.x +
+			(random.PositiveReal() * (tileRect.z - SOLDIER_TEX_DIM.x)),
+			tileRect.y +
+			(random.PositiveReal() * (tileRect.w - SOLDIER_TEX_DIM.y))));
+	}
 }

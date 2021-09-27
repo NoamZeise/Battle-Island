@@ -41,6 +41,10 @@ void World::LoadTextures(Render& render)
 	moveAvailableTex = render.LoadTexture("textures/availableMove.png");
 	cityHpFullTex = render.LoadTexture("textures/cityHealthFull.png");
 	cityHpEmptyTex = render.LoadTexture("textures/cityHealthEmpty.png");
+	pcTurnTex = render.LoadTexture("textures/pcturn.png");
+	unitCostTex = render.LoadTexture("textures/unitCost.png");
+	victoryTex = render.LoadTexture("textures/victory.png");
+	defeatTex = render.LoadTexture("textures/defeat.png");
 
 	map.push_back(std::vector<Tile>(width * height, Tile::Water));
 	genWorld();
@@ -48,9 +52,20 @@ void World::LoadTextures(Render& render)
 	menuManager = new MenuManager(render);
 }
 
-void World::Reset()
+void World::Reset(glm::vec2 position, unsigned int width, unsigned int height)
 {
+	if (width < 2 || height < 2)
+		throw std::runtime_error("dimentions too small");
+	this->width = width;
+	this->height = height;
+	this->position = position;
+	worldSize = getBounds();
 	cleanup();
+	gameOver = false;
+	worldComplete = false;
+	userTurn = true;
+	CommandMode = false;
+	camera.resize(worldSize);
 	map.push_back(std::vector<Tile>(width * height, Tile::Water));
 	genWorld();
 }
@@ -58,9 +73,11 @@ void World::Reset()
 void World::cleanup()
 {
 	map.clear();
-	delete user;
+	if(user != nullptr)
+		delete user;
 	user = nullptr;
-	delete enemy;
+	if(enemy != nullptr)
+		delete enemy;
 	enemy = nullptr;
 }
 
@@ -109,13 +126,20 @@ void World::genWorld()
 		loops++;
 		if (loops > 10)
 		{
-			this->Reset();
+			this->Reset(position, width, height);
 			return;
 		}
 	}
 	Location unitPlacement = suitable[randomIndex];
+	suitable.clear();
+	getAdjacentLand(unitPlacement, &suitable);
+	if (suitable.empty())
+	{
+		this->Reset(position, width, height);
+		return;
+	}
 	modTile(2, unitPlacement, Tile::PlayerUnit);
-	user->addUnit(Unit(worldSize, unitPlacement, texture[Tile::PlayerUnit], 4, random));
+	user->addUnit(Unit(worldSize, unitPlacement, texture[Tile::PlayerUnit], STARTING_UNIT_HP, random));
 
 	Location enemyLoc = enemy->getCityLocation();
 	suitable.clear();
@@ -134,13 +158,20 @@ void World::genWorld()
 		loops++;
 		if (loops > 10)
 		{
-			this->Reset();
+			this->Reset(position, width, height);
 			return;
 		}
 	}
 	unitPlacement = suitable[randomIndex];
+	suitable.clear();
+	getAdjacentLand(unitPlacement, &suitable);
+	if (suitable.empty())
+	{
+		this->Reset(position, width, height);
+		return;
+	}
 	modTile(2, unitPlacement, Tile::EnemyUnit);
-	enemy->addUnit(Unit(worldSize, unitPlacement, texture[Tile::EnemyUnit], 4, random));
+	enemy->addUnit(Unit(worldSize, unitPlacement, texture[Tile::EnemyUnit], STARTING_UNIT_HP, random));
 
 	//add trees
 	for (size_t i = 0; i < (width * height) / 5; i++)
@@ -223,33 +254,37 @@ bool World::valid(unsigned int layer, Location location)
 
 void World::Update(Btn& btn, Timer& timer)
 {
-
-	if (menuManager->isActive())
-		menuUpdate(btn);
+	if (gameOver)
+	{
+		if (btn.press.A() && !btn.prev.A())
+			worldComplete = true;
+	}
 	else
 	{
-		camera.Update(btn, timer);
-		if (userTurn)
-			cursorUpdate(btn, timer);
+		if (menuManager->isActive())
+			menuUpdate(btn);
 		else
-			enemyAiUpdate();
-		user->Update(timer);
-		enemy->Update(timer);
-	}
+		{
+			camera.Update(btn, timer);
+			if (userTurn)
+				cursorUpdate(btn, timer);
+			else
+				enemyAiUpdate(timer);
+			user->Update(timer);
+			enemy->Update(timer);
+		}
 
-	if (enemy->getCityHealth() == 0 || enemy->unitCount() <= 0)
-	{
-		playerLost = false;
-		gameOver = true;
-		Reset();
+		if (enemy->getCityHealth() == 0 || enemy->unitCount() <= 0)
+		{
+			playerLost = false;
+			gameOver = true;
+		}
+		else if (user->getCityHealth() == 0 || user->unitCount() <= 0)
+		{
+			playerLost = true;
+			gameOver = true;
+		}
 	}
-	else if (user->getCityHealth() == 0 || user->unitCount() <= 0)
-	{
-		playerLost = true;
-		gameOver = true;
-		Reset();
-	}
-
 }
 
 void World::cursorUpdate(Btn& btn, Timer& timer)
@@ -259,49 +294,60 @@ void World::cursorUpdate(Btn& btn, Timer& timer)
 	{
 		if (!CommandMode && userTurn)
 		{
-			if (!(lastCursor == cursor) || tileHovering != Tile::Empty)
+			PlayerTurnInfo ptInfo = user->getTurnInfo();
+			if (ptInfo.unmovedUnits.size() == 0 && (!ptInfo.cityMove || user->getResourceCount() < 3))
 			{
-				bool tileFound = false;
-				for (int i = map.size() - 1; i >= 0; i--)
+				userTurn = false;
+				user->ResetMoves();
+			}
+			else
+			{
+				if (!(lastCursor == cursor) || tileHovering == Tile::Empty)
 				{
-					Tile tile = getTile(i, *cursor);
-					if (tile != Tile::Empty)
+					bool tileFound = false;
+					for (int i = map.size() - 1; i >= 0; i--)
 					{
-						tileHovering = tile;
-						tileFound = true;
+						Tile tile = getTile(i, *cursor);
+						if (tile != Tile::Empty)
+						{
+							tileHovering = tile;
+							tileFound = true;
+							break;
+						}
+					}
+					if (!tileFound)
+						tileHovering = Tile::Empty;
+				}
+				if (btn.press.A() && !btn.prev.A() && tileHovering != Tile::Empty)
+				{
+					switch (tileHovering)
+					{
+					case Tile::PlayerUnit:
+						if (user->movesLeft(*cursor) > 0)
+						{
+							std::vector<MenuElems> menuOptions{ MenuElems::Move };
+							if (getTile(1, *cursor) == Tile::Material)
+								menuOptions.push_back(MenuElems::Take);
+							if (isAdjacentTargets(*cursor, true))
+								menuOptions.push_back(MenuElems::Hit);
+							if(user->movesLeft(*cursor) >= 2)
+								menuOptions.push_back(MenuElems::Rest);
+							menuManager->OpenMenu(MENU_POS, menuOptions);
+						}
+						break;
+					case Tile::PlayerCity:
+						std::vector<MenuElems> menuOptions{  };
+						if (user->getResourceCount() >= 3)
+							menuOptions.push_back(MenuElems::Build);
+						menuManager->OpenMenu(MENU_POS, menuOptions);
 						break;
 					}
 				}
-				if (!tileFound)
-					tileHovering = Tile::Empty;
-			}
-			if (btn.press.A() && !btn.prev.A() && tileHovering != Tile::Empty)
-			{
-				switch (tileHovering)
+				else if (btn.press.B() && !btn.prev.B())
 				{
-				case Tile::PlayerUnit:
-					if (user->movesLeft(*cursor) > 0)
-					{
-						std::vector<MenuElems> menuOptions{ MenuElems::Move };
-						if (getTile(1, *cursor) == Tile::Material)
-							menuOptions.push_back(MenuElems::Take);
-						if(isAdjacentTargets(*cursor, true))
-							menuOptions.push_back(MenuElems::Hit);
-						menuManager->OpenMenu(MENU_POS, menuOptions);
-					}
-					break;
-				case Tile::PlayerCity:
-					std::vector<MenuElems> menuOptions{  };
-					if (user->getResourceCount() >= 3)
-						menuOptions.push_back(MenuElems::Build);
+					std::vector<MenuElems> menuOptions{ MenuElems::Pass, MenuElems::CloseGame };
 					menuManager->OpenMenu(MENU_POS, menuOptions);
-					break;
 				}
-			}
-			else if(btn.press.Start() && !btn.prev.Start() || btn.press.B() && !btn.prev.B())
-			{
-				std::vector<MenuElems> menuOptions{ MenuElems::Pass, MenuElems::Save, MenuElems::Load };
-				menuManager->OpenMenu(MENU_POS, menuOptions);
 			}
 		}
 		if (CommandMode)
@@ -346,7 +392,7 @@ void World::cursorUpdate(Btn& btn, Timer& timer)
 void World::menuUpdate(Btn& btn)
 {
 	menuManager->Update(btn);
-	if (btn.press.Start() && !btn.prev.Start())
+	if (btn.press.B() && !btn.prev.B())
 	{
 		menuManager->CloseMenu(menuManager->activeMenu());
 		return;
@@ -380,98 +426,150 @@ void World::menuUpdate(Btn& btn)
 			user->UnitTurn(lastCursor);
 			menuManager->CloseMenu(menuManager->activeMenu());
 			break;
+		case MenuElems::Rest:
+			user->restUnit(lastCursor);
+			menuManager->CloseMenu(menuManager->activeMenu());
+			break;
 		case MenuElems::Pass:
 			menuManager->CloseMenu(menuManager->activeMenu());
 			userTurn = false;
 			user->ResetMoves();
 			break;
+		case MenuElems::CloseGame:
+			worldComplete = true;
+			menuManager->CloseMenu(menuManager->activeMenu());
+			break;
 		}
 	}
 }
 
-void World::enemyAiUpdate()
+void World::enemyAiUpdate(Timer& timer)
 {
-	NPCommand enemyCommand = enemy->getNPCommand();
-
-	if (enemyCommand.unmovedUnits.size() > 0) 
+	tileHovering = Tile::Empty;
+	tileSelected = Tile::Empty;
+	if (enemyMoveTimer > ENEMY_MOVE_DELAY || FAST_ENEMY_TURN)
 	{
-		Location unit = enemyCommand.unmovedUnits.back();
-		//attack if avaliable
-		std::vector<Location> adjTargets;
-		getAdjacentTargets(unit, &adjTargets, false);
-		if (adjTargets.size() > 0)
+		enemyMoveTimer = 0;
+		PlayerTurnInfo enemyCommand = enemy->getTurnInfo();
+
+		if (enemyCommand.unmovedUnits.size() > 0)
 		{
-			HitUnitOrCity(unit, adjTargets[0], false);
-		}
-		//collect resource if available
-		else if (getTile(1, unit) == Tile::Material)
-		{
-			modTile(1, unit, Tile::Empty);
-			enemy->addResource(1);
-			enemy->UnitTurn(unit);
-		}
-		//move towards enemy or resource
-		else
-		{
-			float bestDist = 1000;
-			Location* bestTarget = nullptr;
-			for (size_t y = 0; y < height; y++)
+			Location unit = enemyCommand.unmovedUnits.back();
+			//attack if avaliable
+			std::vector<Location> adjTargets;
+			getAdjacentTargets(unit, &adjTargets, false);
+			if (adjTargets.size() > 0)
 			{
-				for (size_t x = 0; x < width; x++)
+				HitUnitOrCity(unit, adjTargets[0], false);
+#ifndef NDEBUG
+				std::cout << "enemy attacks with unit at x: " << unit.x << " y: " << unit.y << std::endl;
+#endif
+			}
+			//collect resource if available
+			else if (getTile(1, unit) == Tile::Material)
+			{
+				modTile(1, unit, Tile::Empty);
+				enemy->addResource(1);
+				enemy->UnitTurn(unit);
+#ifndef NDEBUG
+				std::cout << "enemy collects resource with unit at x: " << unit.x << " y: " << unit.y << std::endl;
+#endif
+			}
+			//move towards enemy or resource
+			else
+			{
+				float bestDist = 1000;
+				Location* bestTarget = nullptr;
+				for (size_t y = 0; y < height; y++)
 				{
-					if (map[1][(y * width) + x] == Tile::Material ||
-						map[1][(y * width) + x] == Tile::EnemyUnit ||
-						map[1][(y * width) + x] == Tile::EnemyCity)
+					for (size_t x = 0; x < width; x++)
 					{
-						float thisDist = glm::distance(glm::vec2(unit.x, unit.y),
-							glm::vec2(x, y));
-						if (thisDist < bestDist)
+						if (map[1][(y * width) + x] == Tile::Material ||
+							map[1][(y * width) + x] == Tile::PlayerUnit ||
+							map[1][(y * width) + x] == Tile::PlayerCity)
 						{
-							bestDist = thisDist;
-							bestTarget = new Location(x, y);
+							float thisDist = glm::distance(glm::vec2(unit.x, unit.y),
+								glm::vec2(x, y));
+							if (thisDist < bestDist)
+							{
+								bestDist = thisDist;
+								bestTarget = new Location(x, y);
+							}
 						}
 					}
 				}
-			}
-			if (bestTarget != nullptr)
-			{
 				std::vector<Location> movableSquares;
 				getAdjacentLand(unit, &movableSquares);
-				bestDist = 1000;
-				Location* bestMovable = nullptr;
-				for (size_t i = 0; i < movableSquares.size(); i++)
+				if (movableSquares.size() > 0)
 				{
-					float thisDist = glm::distance(glm::vec2(movableSquares[i].x, movableSquares[i].y), 
-						glm::vec2(bestTarget->x, bestTarget->y));
-					if (thisDist < bestDist)
+
+					if (bestTarget != nullptr)
 					{
-						bestDist = thisDist;
-						bestMovable = new Location(movableSquares[i].x, movableSquares[i].y);
+						bestDist = 1000;
+						Location* bestMovable = nullptr;
+						for (size_t i = 0; i < movableSquares.size(); i++)
+						{
+							float thisDist = glm::distance(glm::vec2(movableSquares[i].x, movableSquares[i].y),
+								glm::vec2(bestTarget->x, bestTarget->y));
+							if (thisDist < bestDist)
+							{
+								bestDist = thisDist;
+								bestMovable = new Location(movableSquares[i].x, movableSquares[i].y);
+							}
+						}
+						if (bestMovable != nullptr /* && bestDist < 2*/)
+						{
+#ifndef NDEBUG
+							std::cout << "enemy moves unit at x: " << unit.x << " y: " << unit.y << std::endl;
+#endif
+							MoveUnit(unit, *bestMovable, false);
+							delete bestMovable;
+						}
+						else
+						{
+#ifndef NDEBUG
+							std::cout << "enemy moves unit at x: " << unit.x << " y: " << unit.y << std::endl;
+#endif
+							MoveUnit(unit, movableSquares.back(), false);
+						}
+						delete bestTarget;
+					}
+					else
+					{
+#ifndef NDEBUG
+						std::cout << "enemy moves unit at x: " << unit.x << " y: " << unit.y << std::endl;
+#endif
+						MoveUnit(unit, movableSquares.back(), false);
 					}
 				}
-				if (bestMovable != nullptr)
+				else
 				{
-					MoveUnit(unit, *bestMovable, false);
-					delete bestMovable;
+					enemy->UnitTurn(unit);
 				}
-				delete bestTarget;
 			}
 		}
-	}
-	else if (enemyCommand.cityMove && enemy->getResourceCount() >= 3)
-	{
-		std::vector<Location> buildableSquares;
-		getAdjacentLand(enemyCommand.city, &buildableSquares);
-		if (buildableSquares.size() > 0)
+		else if (enemyCommand.cityMove && enemy->getResourceCount() >= 3)
 		{
-			buildUnit(buildableSquares[0], false);
+			std::vector<Location> buildableSquares;
+			getAdjacentLand(enemyCommand.city, &buildableSquares);
+			if (buildableSquares.size() > 0)
+			{
+#ifndef NDEBUG
+				std::cout << "enemy builds unit at x: " << buildableSquares[0].x << " y: " << buildableSquares[0].y << std::endl;
+#endif
+				buildUnit(buildableSquares[0], false);
+			}
+		}
+		else
+		{
+#ifndef NDEBUG
+			std::cout << "enemy passes turn to player\n\n";
+#endif
+			userTurn = true;
+			enemy->ResetMoves();
 		}
 	}
-	else
-	{
-		userTurn = true;
-		enemy->ResetMoves();
-	}
+	enemyMoveTimer += timer.FrameElapsed();
 }
 
 void World::resetCommandMode()
@@ -604,29 +702,34 @@ void World::buildUnit(Location dst, bool isPlayer)
 	if (isPlayer)
 	{
 		modTile(2, dst, Tile::PlayerUnit);
-		user->buildUnit(Unit(worldSize, dst, texture[Tile::PlayerUnit], 4, random));
+		user->buildUnit(Unit(worldSize, dst, texture[Tile::PlayerUnit], STARTING_UNIT_HP, random));
 	}
 	else
 	{
 		modTile(2, dst, Tile::EnemyUnit);
-		enemy->buildUnit(Unit(worldSize, dst, texture[Tile::EnemyUnit], 4, random));
+		enemy->buildUnit(Unit(worldSize, dst, texture[Tile::EnemyUnit], STARTING_UNIT_HP, random));
 	}
 }
 
 void World::Draw(Render& render)
 {
 	glm::vec2 offset = camera.getCameraOffset();
-	for (const auto& layer : map)
+	for (size_t y = 0; y < height; y++)
 	{
-		for (size_t y = 0; y < height; y++)
+		for (size_t x = 0; x < width; x++)
 		{
-			for (size_t x = 0; x < width; x++)
+			if (!helper::colliding(
+				glm::vec4(position.x + (x * TILE_WIDTH), position.y + (y * TILE_HEIGHT), TILE_WIDTH, TILE_HEIGHT),
+				camera.getRect()))
+				continue;
+
+			for (const auto& layer : map)
 			{
 				if (layer[(y * width) + x] == Tile::Empty ||
 					layer[(y * width) + x] == Tile::PlayerCity ||
 					layer[(y * width) + x] == Tile::EnemyCity ||
 					layer[(y * width) + x] == Tile::PlayerUnit ||
-					layer[(y * width) + x] == Tile::EnemyUnit )
+					layer[(y * width) + x] == Tile::EnemyUnit)
 					continue;
 				render.DrawSquare(glm::vec4(
 					position.x + (x * TILE_WIDTH), position.y + (y * TILE_HEIGHT),
@@ -653,12 +756,18 @@ void World::Draw(Render& render)
 			else
 				moves = user->movesLeft(lastCursor);
 			uint32_t tex = moveAvailableTex;
-			for (size_t i = 1; i < 3; i++)
+			int max;
+			tileHovering == Tile::PlayerCity ? max = 2 : max = 3;
+			for (size_t i = 1; i < max; i++)
 			{
 				if (i > moves)
 					tex = moveUsedTex;
-				render.DrawSquare(glm::vec4((lastCursor.x * TILE_WIDTH) + ((i - 1) * (MOVE_TEX_DIM.x + 2) + 2), lastCursor.y * TILE_HEIGHT + 1,
-					MOVE_TEX_DIM.x, MOVE_TEX_DIM.y), 0, tex);
+				tileHovering == Tile::PlayerUnit ?
+					render.DrawSquare(glm::vec4((lastCursor.x * TILE_WIDTH) + ((i - 1) * (MOVE_TEX_DIM.x + 2) + 2), lastCursor.y * TILE_HEIGHT + 1,
+						MOVE_TEX_DIM.x, MOVE_TEX_DIM.y), 0, tex)
+					:
+					render.DrawSquare(glm::vec4((lastCursor.x * TILE_WIDTH) + ((i - 1) * (MOVE_TEX_DIM.x + 2) + 5), lastCursor.y * TILE_HEIGHT + 1,
+						MOVE_TEX_DIM.x + 1, MOVE_TEX_DIM.y), 0, tex);
 			}
 		}
 		if (tileHovering == Tile::EnemyCity || tileHovering == Tile::PlayerCity)
@@ -681,6 +790,8 @@ void World::Draw(Render& render)
 		glm::vec4 optionsRect = helper::tileBounds(worldSize, cmdOptions[i]);
 		render.DrawSquare(optionsRect, 0, optionsTex);
 	}
+	if (!userTurn)
+		render.DrawSquare(glm::vec4(PC_TURN_RECT.x - offset.x, PC_TURN_RECT.y - offset.y, PC_TURN_RECT.z, PC_TURN_RECT.w), 0, pcTurnTex);
 	render.DrawSquare(glm::vec4(MATERIAL_VIEW_RECT.x - offset.x, MATERIAL_VIEW_RECT.y - offset.y, MATERIAL_VIEW_RECT.z, MATERIAL_VIEW_RECT.w), 0, materialViewTex);
 	std::string matCount = std::to_string(user->getResourceCount());
 	if (matCount.size() > 1)
@@ -693,6 +804,22 @@ void World::Draw(Render& render)
 	else
 		render.DrawSquare(glm::vec4(MATERIAL_VIEW_RECT.x + NUM2_POS.x - offset.x, MATERIAL_VIEW_RECT.y + NUM2_POS.y - offset.y, NUM_DIM.x, NUM_DIM.y), 0,
 			numTex[matCount.substr(0, 1)]);
+	//unit cost 
+	if (tileHovering == Tile::PlayerCity && menuManager->isActive())
+	{
+		render.DrawSquare(glm::vec4(UNIT_COST_RECT.x - offset.x, UNIT_COST_RECT.y - offset.y, UNIT_COST_RECT.z, UNIT_COST_RECT.w), 0, unitCostTex);
+	}
+	if (gameOver)
+	{
+		if (playerLost)
+		{
+			render.DrawSquare(glm::vec4(0 - offset.x, 0 - offset.y, 160, 144), 0, defeatTex);
+		}
+		else
+		{
+			render.DrawSquare(glm::vec4(0 - offset.x, 0 - offset.y, 160, 144), 0, victoryTex);
+		}
+	}
 	menuManager->Draw(render, offset);
 }
 

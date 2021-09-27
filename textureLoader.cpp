@@ -4,6 +4,62 @@ TextureLoader::TextureLoader(Base base, VkCommandPool pool)
 {
 	this->base = base;
 	this->pool = pool;
+	std::ifstream paletteFile("paletteSwap.txt");
+	if (paletteFile.good())
+	{
+		PALETTE_SWAP = true;
+		if (paletteFile.is_open()) {
+			std::string line;
+			int i = 0;
+			while (std::getline(paletteFile, line)) {
+				if (line.size() >= 6)
+				{
+					unsigned char palette[3] = { 0x00, 0x00, 0x00 };
+
+					char sHex1[2] = { line[0], line[1] };
+					unsigned char bHex1 = 0x00;
+					vkhelper::hex2bin(sHex1, &bHex1);
+					palette[0] = bHex1;
+
+					char sHex2[2] = { line[2], line[3] };
+					unsigned char bHex2 = 0x00;
+					vkhelper::hex2bin(sHex2, &bHex2);
+					palette[1] = bHex2;
+
+					char sHex3[2] = { line[4], line[5] };
+					unsigned char bHex3 = 0x00;
+					vkhelper::hex2bin(sHex3, &bHex3);
+					palette[2] = bHex3;
+
+					switch (i)
+					{
+					case 0:
+						COLOUR_SWAP_1[0] = palette[0];
+						COLOUR_SWAP_1[1] = palette[1];
+						COLOUR_SWAP_1[2] = palette[2];
+							break;
+					case 1:
+						COLOUR_SWAP_2[0] = palette[0];
+						COLOUR_SWAP_2[1] = palette[1];
+						COLOUR_SWAP_2[2] = palette[2];
+						break;
+					case 2:
+						COLOUR_SWAP_3[0] = palette[0];
+						COLOUR_SWAP_3[1] = palette[1];
+						COLOUR_SWAP_3[2] = palette[2];
+						break;
+					case 3:
+						COLOUR_SWAP_4[0] = palette[0];
+						COLOUR_SWAP_4[1] = palette[1];
+						COLOUR_SWAP_4[2] = palette[2];
+						break;
+					}
+				}
+				i++;
+			}
+			paletteFile.close();
+		}
+	}
 }
 
 TextureLoader::~TextureLoader()

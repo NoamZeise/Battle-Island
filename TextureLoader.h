@@ -13,6 +13,7 @@
 #include <string>
 #include <stdexcept>
 #include <cmath>
+#include <fstream>
 
 #include "typeStructs.h"
 #include "vkhelper.h"
@@ -66,6 +67,13 @@ private:
 	std::vector<TempTexture> texToLoad;
 	std::vector<Texture> textures;
 	VkDeviceMemory memory;
+
+	bool PALETTE_SWAP = false;
+	//lighter to darker
+	unsigned char COLOUR_SWAP_1[3] = { 0xE0, 0xF8, 0xD0 };
+	unsigned char COLOUR_SWAP_2[3] = { 0x88, 0xC0, 0x70 };
+	unsigned char COLOUR_SWAP_3[3] = { 0x34, 0x68, 0x56 };
+	unsigned char COLOUR_SWAP_4[3] = { 0x08, 0x18, 0x20 };
 };
 
 

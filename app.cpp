@@ -9,7 +9,13 @@ App::App()
 	//init glfw window
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); //using vulkan not openGL
-	mWindow = glfwCreateWindow(mWindowWidth, mWindowHeight, "Vulkan App", nullptr, nullptr);
+	mWindow = glfwCreateWindow(mWindowWidth, mWindowHeight, "Battle Island", nullptr, nullptr);
+
+	GLFWimage images[1];
+	images[0].pixels = stbi_load("icon.png", &images[0].width, &images[0].height, 0, 4); //rgba channels 
+	glfwSetWindowIcon(mWindow, 1, images);
+
+	stbi_image_free(images[0].pixels);
 	glfwSetWindowUserPointer(mWindow, this);
 	glfwSetFramebufferSizeCallback(mWindow, framebuffer_size_callback);
 	glfwSetCursorPosCallback(mWindow, mouse_callback);
@@ -27,6 +33,7 @@ App::~App()
 {
 	delete world;
 	delete mRender;
+	delete title;
 	//cleanup glfw
 	glfwDestroyWindow(mWindow);
 	glfwTerminate();
@@ -34,12 +41,15 @@ App::~App()
 
 void App::loadAssets()
 {
-	//TODO load assets
-	world = new World(glm::vec2(0, 0), 15, 8);
+
+	title = new Title(*mRender);
+	world = new World(glm::vec2(0, 0), 6, 6);
 	world->LoadTextures(*mRender);
 	mainMusic = Audio("audio/main.mp3");
-	//mainMusic.loop();
-	mainMusic.setVolume(0.5);
+#ifdef NDEBUG
+	mainMusic.loop();
+#endif
+	mainMusic.setVolume(0.3);
 
 	mRender->endTextureLoad();
 }
@@ -72,15 +82,56 @@ void App::update()
 {
 	PreUpdate();
 
-	world->Update(btn, timer);
-	
+	if (title->isActive())
+	{
+		title->Update(btn);
+		switch (title->getChoice())
+		{
+		case Title::Menu::Small:
+			title->disable();
+			world->Reset(glm::vec2(0, 0), 6, 6);
+			break;
+		case Title::Menu::Medium:
+			title->disable();
+			world->Reset(glm::vec2(0, 0), 15, 15);
+			break;
+		case Title::Menu::Large:
+			title->disable();
+			world->Reset(glm::vec2(0, 0), 25, 30);
+			break;
+		case Title::Menu::Exit:
+			glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+			break;
+		case Title::Menu::None:
+			break;
+		}
+	}
+	else
+	{
+		if (!world->getWorldComplete())
+			world->Update(btn, timer);
+		else
+			title->Reset();
+	}
+
+	if (btn.press.Start() && !btn.prev.Start())
+	{
+		if (mainMusic.isplaying())
+			mainMusic.pause();
+		else
+			mainMusic.loop();
+	}
+
 	PostUpdate();
 }
 
 void App::PostUpdate()
 {
 	btn.prev = btn.press;
-	MoveCamera();
+	if(!title->isActive())
+		MoveCamera();
+	else
+		mRender->setCameraOffset(glm::vec2(0, 0));
 }
 
 void App::MoveCamera()
@@ -93,7 +144,10 @@ void App::draw()
 {
 	mRender->startDraw();
 
-	world->Draw(*mRender);
+	if (title->isActive())
+		title->Draw(*mRender);
+	else
+		world->Draw(*mRender);
 
 	mRender->endDraw();
 }

@@ -12,6 +12,13 @@
 #include <iostream>
 #include <vector>
 
+struct PlayerTurnInfo
+{
+	std::vector<Location> unmovedUnits;
+	Location city;
+	bool cityMove = false;
+};
+
 class Player
 {
 public:
@@ -50,6 +57,19 @@ public:
 		}
 	}
 
+	void restUnit(Location loc)
+	{
+		for (int i = 0; i < units.size(); i++)
+		{
+			if (units[i].getLocation() == loc)
+			{
+				units[i].addHealth(1);
+				while (units[i].getMovesLeft() > 0)
+					units[i].take();
+			}
+		}
+	}
+
 	int unitCount() { return units.size(); }
 
 	void UnitTurn(Location loc)
@@ -72,7 +92,7 @@ public:
 
 	void ResetMoves()
 	{
-		cityMoves = 2;
+		cityMoves = 1;
 		for (int i = 0; i < units.size(); i++)
 		{
 			units[i].resetMoves();
@@ -134,42 +154,14 @@ public:
 						return true;
 					}
 				}
-				return false;
 			}
+		return false;
 	}
 	int getCityHealth() { return cityHealth; }
 
-protected:
-	Location city;
-	std::vector<Unit> units;
-	int resources = 0;
-	glm::vec4 cityRect;
-	int cityHealth = 5;
-	int cityMoves = 2;
-private:
-	unsigned int cityTex;
-
-};
-
-struct NPCommand
-{
-	std::vector<Location> unmovedUnits;
-	Location city;
-	bool cityMove = false;
-};
-
-class NPC : public Player
-{
-public:
-	NPC(Location city, unsigned int cityTex, glm::vec4 worldRect) : Player(city, cityTex, worldRect) { }
-	void Update(Timer& timer) override
+	PlayerTurnInfo getTurnInfo()
 	{
-		Player::Update(timer);
-	}
-
-	NPCommand getNPCommand()
-	{
-		NPCommand command; //defaults to turn finish command
+		PlayerTurnInfo command; //defaults to turn finish command
 
 		for (size_t i = 0; i < units.size(); i++)
 		{
@@ -183,6 +175,27 @@ public:
 		}
 
 		return command;
+	}
+
+protected:
+	Location city;
+	std::vector<Unit> units;
+	int resources = 0;
+	glm::vec4 cityRect;
+	int cityHealth = 5;
+	int cityMoves = 1;
+private:
+	unsigned int cityTex;
+
+};
+
+class NPC : public Player
+{
+public:
+	NPC(Location city, unsigned int cityTex, glm::vec4 worldRect) : Player(city, cityTex, worldRect) { }
+	void Update(Timer& timer) override
+	{
+		Player::Update(timer);
 	}
 
 private:

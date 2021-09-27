@@ -102,6 +102,10 @@
     <ClInclude Include="Camera.h">
       <Filter>1headers\App\Game\UI</Filter>
     </ClInclude>
+    <ClInclude Include="title.h">
+      <Filter>1headers\App\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="cpp">
@@ -177,5 +181,11 @@
     <Image Include="error.png">
       <Filter>assets</Filter>
     </Image>
+    <Image Include="icon.ico">
+      <Filter>assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="BattleIsland.rc" />
   </ItemGroup>
 </Project>
