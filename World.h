@@ -97,6 +97,8 @@ private:
 	uint32_t victoryTex = 0;
 	uint32_t defeatTex = 0;
 
+	uint32_t bgColourTex = 0;
+
 	glm::vec4 getBounds();
 	void genWorld();
 	void genLand();

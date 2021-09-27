@@ -45,6 +45,7 @@ void World::LoadTextures(Render& render)
 	unitCostTex = render.LoadTexture("textures/unitCost.png");
 	victoryTex = render.LoadTexture("textures/victory.png");
 	defeatTex = render.LoadTexture("textures/defeat.png");
+	bgColourTex = render.LoadTexture("textures/bgColour.png");
 
 	map.push_back(std::vector<Tile>(width * height, Tile::Water));
 	genWorld();
@@ -714,6 +715,9 @@ void World::buildUnit(Location dst, bool isPlayer)
 void World::Draw(Render& render)
 {
 	glm::vec2 offset = camera.getCameraOffset();
+	render.DrawSquare(glm::vec4(
+		0 - offset.x, 0 - offset.y,
+		160, 144), 0, bgColourTex);
 	for (size_t y = 0; y < height; y++)
 	{
 		for (size_t x = 0; x < width; x++)
